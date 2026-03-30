@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JoinMySquad — Find Your Perfect Team</title>
+    <meta name="description" content="The premium gaming LFG platform. Find squads for CS2, Rust, R6 Siege, Apex Legends and more.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-card">
+            <div class="loading-logo"><i class="fa-solid fa-bolt"></i></div>
+            <h2>JoinMySquad</h2>
+            <p>Loading your squad hub...</p>
+            <div class="loading-bar"><span></span></div>
+        </div>
+    </div>
+    <div class="bg-effects">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- NAVBAR -->
+    <header id="navbar">
+        <div class="nav-inner">
+            <div class="logo" onclick="switchView('home-view')">
+                <i class="fa-solid fa-bolt"></i>
+                <span>JoinMySquad</span>
+            </div>
+            <nav class="nav-pills">
+                <button class="pill active" data-target="home-view">Home</button>
+                <button class="pill" data-target="games-view">Games</button>
+                <button class="pill" data-target="find-group-view">Find Group</button>
+                <button class="pill" data-target="create-post-view">Create Post</button>
+                <button class="pill" data-target="edit-posts-view">Edit Posts</button>
+                <button class="pill" data-target="chat-view" id="chatNavBtn"><i class="fa-solid fa-comments"></i> Chat</button>
+            </nav>
+            <div class="nav-auth">
+                <button class="auth-btn" id="loginBtn"><i class="fa-solid fa-right-to-bracket"></i> <span>Sign In</span></button>
+                <div class="user-chip hidden" id="userChip">
+                    <img id="userAvatar" src="" alt="" class="chip-avatar">
+                    <span id="userName"></span>
+                    <button class="chip-action" id="inboxBtn" title="Inbox"><i class="fa-solid fa-paper-plane"></i></button>
+                    <button class="chip-action" id="settingsBtn" title="Settings"><i class="fa-solid fa-gear"></i></button>
+                    <button class="chip-logout" id="logoutBtn" title="Sign Out"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- AUTH MODAL -->
+    <div class="modal-bg" id="authModal">
+        <div class="modal-card auth-modal-card">
+            <button class="modal-x" onclick="closeAuthModal()">&times;</button>
+            <div class="auth-modal-body">
+                <div class="auth-header">
+                    <i class="fa-solid fa-bolt auth-logo-icon"></i>
+                    <h2>Welcome to <span class="gradient-text">JoinMySquad</span></h2>
+                    <p>Sign in to create posts and join squads</p>
+                </div>
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Sign In</button>
+                    <button class="auth-tab" data-tab="register">Create Account</button>
+                </div>
+                <form id="loginForm" class="auth-form">
+                    <div class="field"><label for="loginEmail">Email</label><input type="email" id="loginEmail" placeholder="you@example.com" required></div>
+                    <div class="field"><label for="loginPass">Password</label><input type="password" id="loginPass" placeholder="••••••••" required></div>
+                    <label class="toggle-card" style="margin-bottom:1.25rem">
+                        <div class="toggle-info"><i class="fa-solid fa-bookmark" style="color:var(--sky)"></i><span>Remember me</span></div>
+                        <div class="switch"><input type="checkbox" id="rememberMe"><span class="track"></span></div>
+                    </label>
+                    <div id="loginError" class="auth-error hidden"></div>
+                    <button type="submit" class="btn-glow full-width"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+                </form>
+                <form id="registerForm" class="auth-form hidden">
+                    <div class="field"><label for="regName">Display Name</label><input type="text" id="regName" placeholder="Your gamer tag" required></div>
+                    <div class="field"><label for="regEmail">Email</label><input type="email" id="regEmail" placeholder="you@example.com" required></div>
+                    <div class="field"><label for="regPass">Password</label><input type="password" id="regPass" placeholder="Min 6 characters" required minlength="6"></div>
+                    <div id="regError" class="auth-error hidden"></div>
+                    <button type="submit" class="btn-glow full-width"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+                </form>
+                <div class="auth-divider"><span>or</span></div>
+                <button class="google-btn" id="googleSignIn"><i class="fa-brands fa-google"></i> Continue with Google</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <main>
+        <!-- HOME -->
+        <section id="home-view" class="view active">
+            <div class="hero-shell">
+                <div class="hero hero-copy">
+                    <span class="hero-badge">BETA</span>
+                    <h1>Stop queueing into chaos.<br><span class="gradient-text">Build a squad with intent.</span></h1>
+                    <p class="hero-sub">JoinMySquad helps you discover active games, post exactly what you need, and jump into ready-to-play groups without the usual Discord scavenger hunt.</p>
+                    <div class="hero-actions">
+                        <button class="btn-glow" onclick="switchView('find-group-view')"><i class="fa-solid fa-crosshairs"></i> Find a Squad</button>
+                        <button class="btn-ghost" onclick="switchView('create-post-view')"><i class="fa-solid fa-wand-magic-sparkles"></i> Create a Squad</button>
+                    </div>
+                </div>
+            </div>
+            <section class="proof-strip">
+                <div><span>Fast squad posts</span><strong>Searchable filters</strong></div>
+                <div><span>Live profile cards</span><strong>Discord + Steam links</strong></div>
+                <div><span>Instant chat rooms</span><strong>Built for stacked teams</strong></div>
+            </section>
+            <section class="section-block">
+                <div class="section-label"><span class="label-dot"></span><h2>Trending Now</h2></div>
+                <div class="card-row" id="trendingGrid"></div>
+            </section>
+            <section class="section-block how-it-works">
+                <div class="section-label"><span class="label-dot"></span><h2>How It Works</h2></div>
+                <div class="feature-grid">
+                    <article class="feature-card">
+                        <span class="feature-kicker">01</span>
+                        <h3>Pick your game</h3>
+                        <p>Browse the full library or jump straight into trending titles with live player snapshots.</p>
+                    </article>
+                    <article class="feature-card">
+                        <span class="feature-kicker">02</span>
+                        <h3>Post exact requirements</h3>
+                        <p>Share rank, mic expectations, group limits, and socials so the right people join faster.</p>
+                    </article>
+                    <article class="feature-card">
+                        <span class="feature-kicker">03</span>
+                        <h3>Move straight to action</h3>
+                        <p>Open a dedicated squad chat, review contact info, and lock in teammates without leaving the page.</p>
+                    </article>
+                </div>
+            </section>
+            <section class="section-block">
+                <div class="section-label"><span class="label-dot"></span><h2>Search Games</h2></div>
+                <div class="home-search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="homeSearch" placeholder="Search for a game…" autocomplete="off"></div>
+                <div class="search-results-grid hidden" id="homeSearchResults"></div>
+            </section>
+        </section>
+
+        <!-- GAMES -->
+        <section id="games-view" class="view">
+            <div class="page-head">
+                <h1 class="gradient-text">All Games</h1>
+                <p>Select a game to see live player stats, inspect activity, and launch a squad request fast. We are working on adding more games while JoinMySquad is in beta.</p>
+            </div>
+            <div class="games-info-bar">
+                <div class="games-info-card"><span>Catalog Size</span><strong id="catalogCount">0 games</strong></div>
+                <div class="games-info-card"><span>Steam Data</span><strong id="gamesSteamStatus">Syncing</strong></div>
+                <div class="games-info-card"><span>Best Move</span><strong>Create or join a live squad</strong></div>
+            </div>
+            <div class="home-search-wrap" style="margin-bottom:2rem"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="gamesSearch" placeholder="Search games…" autocomplete="off"></div>
+            <div class="card-row full" id="allGamesGrid"></div>
+        </section>
+
+        <!-- FIND GROUP -->
+        <section id="find-group-view" class="view">
+            <div class="page-head">
+                <h1 class="gradient-text">Find Your Squad</h1>
+                <p>Browse active requests, filter the noise, and jump into a squad that matches your playstyle.</p>
+            </div>
+            <div class="feed-toolbar">
+                <div class="feed-toolbar-copy">
+                    <strong id="feedResultCount">0 squad posts</strong>
+                    <span id="feedToolbarText">Waiting for live feed...</span>
+                </div>
+            </div>
+            <div class="feed-game-shelf" id="feedGameShelf"></div>
+            <div class="feed-layout">
+                <aside class="feed-sidebar">
+                    <h3><i class="fa-solid fa-filter"></i> Filters</h3>
+                    <div class="filter-section">
+                        <label>Search</label>
+                        <div class="sidebar-search"><input type="text" id="feedSearch" placeholder="Search squads…"></div>
+                    </div>
+                    <div class="filter-section">
+                        <label>Game</label>
+                        <div class="tag-cloud" id="gameFilters"></div>
+                    </div>
+                </aside>
+                <div class="feed-main" id="postsContainer">
+                    <div class="empty-state"><i class="fa-solid fa-satellite-dish"></i><p>Connecting to live feed…</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CREATE POST -->
+        <section id="create-post-view" class="view">
+            <div class="page-head">
+                <h1 class="gradient-text">Create Squad Request</h1>
+                <p>Fill in your details, set expectations clearly, and attract better teammates faster.</p>
+            </div>
+            <div class="create-tips">
+                <article class="create-tip"><i class="fa-solid fa-bullseye"></i><span>Use a specific title so serious players know what they're joining.</span></article>
+                <article class="create-tip"><i class="fa-solid fa-headset"></i><span>Add comms, rank, and socials to reduce low-quality joins.</span></article>
+                <article class="create-tip"><i class="fa-solid fa-bolt"></i><span>Once posted, your squad gets a dedicated chat room automatically.</span></article>
+            </div>
+            <div class="auth-wall" id="authWall">
+                <i class="fa-solid fa-lock"></i>
+                <h3>Sign in to post</h3>
+                <p>You need an account to create squad requests.</p>
+                <button class="btn-glow" onclick="openAuthModal()"><i class="fa-solid fa-right-to-bracket"></i> Sign In / Create Account</button>
+            </div>
+            <form class="create-form hidden" id="createPostForm">
+                <div class="field"><label for="inputTitle">Post Title</label><input type="text" id="inputTitle" placeholder="e.g. Grinding Ranked — Need 2 More" required></div>
+                <div class="field"><label for="inputDesc">Description & Requirements</label><textarea id="inputDesc" rows="3" placeholder="What kind of players are you looking for?" required></textarea></div>
+                <div class="field-row">
+                    <div class="field"><label for="inputGame">Game</label><select id="inputGame" required><option value="" disabled selected>Select a game</option></select></div>
+                    <div class="field"><label for="inputLimit">Group Limit</label><input type="number" id="inputLimit" min="2" max="50" value="5" required></div>
+                </div>
+                <div class="field hidden" id="customGameField"><label for="inputCustomGame">Custom Game</label><input type="text" id="inputCustomGame" placeholder="Type the game name"></div>
+                <label class="toggle-card">
+                    <div class="toggle-info"><i class="fa-solid fa-trophy" style="color:var(--accent)"></i><span>Has Rank / Level?</span></div>
+                    <div class="switch"><input type="checkbox" id="toggleRank"><span class="track"></span></div>
+                </label>
+                <div class="field hidden" id="rankField"><label for="inputRank">Your Rank / Level</label><input type="text" id="inputRank" placeholder="e.g. Diamond II, Level 50…"></div>
+                <label class="toggle-card">
+                    <div class="toggle-info"><i class="fa-solid fa-microphone" style="color:var(--rose)"></i><span>Mic Required?</span></div>
+                    <div class="switch"><input type="checkbox" id="toggleMic"><span class="track"></span></div>
+                </label>
+                <div class="socials-section">
+                    <h4><i class="fa-solid fa-share-nodes"></i> Add Your Socials <span class="optional">(optional)</span></h4>
+                    <div class="field"><label for="inputDiscord"><i class="fa-brands fa-discord"></i> Discord Username</label><input type="text" id="inputDiscord" placeholder="username"></div>
+                    <div class="field"><label for="inputDiscordServer"><i class="fa-brands fa-discord"></i> Discord Server Invite</label><input type="text" id="inputDiscordServer" placeholder="https://discord.gg/yourserver"></div>
+                    <div class="field"><label for="inputSteam"><i class="fa-brands fa-steam"></i> Steam Profile</label><input type="text" id="inputSteam" placeholder="https://steamcommunity.com/id/you"></div>
+                </div>
+                <button type="submit" class="btn-glow full-width"><i class="fa-solid fa-paper-plane"></i> Publish Squad Request</button>
+            </form>
+        </section>
+
+        <section id="edit-posts-view" class="view">
+            <div class="page-head">
+                <h1 class="gradient-text">Edit Your Posts</h1>
+                <p>Update your squad details, manage members, and keep your group organized.</p>
+            </div>
+            <div class="auth-wall" id="editAuthWall">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <h3>Sign in to manage posts</h3>
+                <p>Your own squad posts show up here for editing and moderation.</p>
+                <button class="btn-glow" onclick="openAuthModal()"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+            </div>
+            <div class="edit-posts-list hidden" id="editPostsList"></div>
+        </section>
+
+        <!-- CHAT VIEW -->
+        <section id="chat-view" class="view">
+            <div class="page-head">
+                <h1 class="gradient-text">Chat</h1>
+                <p>Your squad group chats and direct messages in one place.</p>
+            </div>
+            <div class="chat-view-shell">
+                <aside class="chat-view-sidebar">
+                    <div class="chat-sidebar-head">
+                        <h3>Conversations</h3>
+                        <div class="chat-tabs">
+                            <button class="chat-tab-btn active" data-tab="dms" id="chatTabDms">DMs</button>
+                            <button class="chat-tab-btn" data-tab="squads" id="chatTabSquads">Squad Chats</button>
+                        </div>
+                    </div>
+                    <div class="chat-sidebar-list" id="chatSidebarList"></div>
+                </aside>
+                <div class="chat-view-main" id="chatViewMain">
+                    <div class="chat-view-placeholder">
+                        <div class="empty-state"><i class="fa-solid fa-comments"></i><p>Select a conversation to start chatting.</p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- GAME DETAIL MODAL -->
+    <div class="modal-bg" id="gameModal">
+        <div class="modal-card">
+            <button class="modal-x" onclick="closeModal()">&times;</button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- SQUAD CHAT MODAL -->
+    <div class="modal-bg" id="chatModal">
+        <div class="modal-card chat-modal-card">
+            <button class="modal-x" onclick="closeChatModal()">&times;</button>
+            <div class="chat-header" id="chatHeader"></div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <form class="chat-input-row" id="chatForm">
+                <input type="text" id="chatInput" placeholder="Type a message…" autocomplete="off" required>
+                <button type="submit" class="btn-glow"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-bg" id="dmModal">
+        <div class="modal-card chat-modal-card dm-modal-card">
+            <button class="modal-x" onclick="closeDmModal()">&times;</button>
+            <div class="chat-header" id="dmHeader"></div>
+            <div class="dm-shell">
+                <aside class="dm-sidebar">
+                    <div class="dm-sidebar-title">Inbox</div>
+                    <div class="dm-list" id="dmList"></div>
+                </aside>
+                <div class="dm-main">
+                    <div class="chat-messages" id="dmMessages"></div>
+                    <form class="chat-input-row" id="dmForm">
+                        <input type="text" id="dmInput" placeholder="Type a private message..." autocomplete="off" required>
+                        <button type="submit" class="btn-glow"><i class="fa-solid fa-paper-plane"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-bg" id="settingsModal">
+        <div class="modal-card settings-modal-card">
+            <button class="modal-x" onclick="closeSettingsModal()">&times;</button>
+            <div class="page-head left">
+                <h1 class="gradient-text">Settings</h1>
+                <p>Update your profile details, email, and password.</p>
+            </div>
+            <div class="settings-grid">
+                <form class="settings-card" id="profileSettingsForm">
+                    <h3>Profile</h3>
+                    <div class="field"><label for="settingsName">Display Name</label><input type="text" id="settingsName" required></div>
+                    <div id="profileSettingsMsg" class="auth-error hidden"></div>
+                    <button type="submit" class="btn-glow full-width">Save Profile</button>
+                </form>
+                <form class="settings-card" id="emailSettingsForm">
+                    <h3>Email</h3>
+                    <div class="field"><label for="settingsEmail">New Email</label><input type="email" id="settingsEmail" required></div>
+                    <div class="field"><label for="settingsCurrentPassword">Current Password</label><input type="password" id="settingsCurrentPassword" placeholder="Needed for email/password accounts"></div>
+                    <div id="emailSettingsMsg" class="auth-error hidden"></div>
+                    <button type="submit" class="btn-glow full-width">Update Email</button>
+                </form>
+                <form class="settings-card" id="passwordSettingsForm">
+                    <h3>Password</h3>
+                    <div class="field"><label for="settingsOldPassword">Current Password</label><input type="password" id="settingsOldPassword"></div>
+                    <div class="field"><label for="settingsNewPassword">New Password</label><input type="password" id="settingsNewPassword" minlength="6" required></div>
+                    <div id="passwordSettingsMsg" class="auth-error hidden"></div>
+                    <button type="submit" class="btn-glow full-width">Update Password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand"><i class="fa-solid fa-bolt"></i> JoinMySquad</div>
+            <div class="footer-links">
+                <a href="#"><i class="fa-brands fa-discord"></i></a>
+                <a href="#"><i class="fa-brands fa-x-twitter"></i></a>
+                <a href="#"><i class="fa-brands fa-steam"></i></a>
+            </div>
+            <p class="footer-copy">&copy; 2026 JoinMySquad. All rights reserved.</p>
+        </div>
+    </footer>
+    <div class="mobile-dock">
+        <button class="dock-btn active" data-target="home-view"><i class="fa-solid fa-house"></i><span>Home</span></button>
+        <button class="dock-btn" data-target="games-view"><i class="fa-solid fa-gamepad"></i><span>Games</span></button>
+        <button class="dock-btn" data-target="find-group-view"><i class="fa-solid fa-users"></i><span>Squads</span></button>
+        <button class="dock-btn" data-target="create-post-view"><i class="fa-solid fa-plus"></i><span>Create</span></button>
+        <button class="dock-btn" data-target="edit-posts-view"><i class="fa-solid fa-pen"></i><span>Edit</span></button>
+        <button class="dock-btn" data-target="chat-view"><i class="fa-solid fa-comments"></i><span>Chat</span></button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
